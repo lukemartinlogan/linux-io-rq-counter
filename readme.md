@@ -15,8 +15,8 @@ C11 compiler
 
 > cd /path/to/linux-io-rq-counter  
 > mkdir build  
-> cd build
-> cmake ../
+> cd build  
+> cmake ../  
 > make -j4  
 > make build-km  
 
@@ -37,12 +37,12 @@ example, use /dev/sda instead of /dev/sda1.
 
 Building this application will create a file called:
 
-> linux-io-rq-counter-um.so
+> linux-io-rq-counter-um.so  
 
 You can link with this file to interact with the kernel module from
 your application. The user API is as follows:
 
-> void init_counter_syscalls(void); 
+> void init_counter_syscalls(void);  
 > int get_num_io_rqs(char *dev);  
 
 You must call that init function to establish a link between your user
