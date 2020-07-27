@@ -1,11 +1,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <asm/types.h>
 #include <sys/socket.h>
 #include <linux/netlink.h>
 #include <linux-io-rq-counter.h>
 
+#define NETLINK_USER 31
 #define MAX_PAYLOAD 1024
 
 //Global vars
@@ -30,24 +33,7 @@ void init_counter_syscalls(void)
 
 int mount_counter(char *dev)
 {
-	int num_io_reqs = 0;
-	
-	struct nlmsghdr nl_header = {
-	};
-	
-	int ret = sendto(sockfd, (void*)nl_header, nl_header->nlmsg_len, 0, (struct sockaddr *)&kern_addr, sizeof(struct sockaddr_nl));
-	if(ret < 0) {
-		perror("Unable to send message to kernel module\n");
-		return -1;
-	}
-	
-	int ret = recvfrom(sockfd, (void*)&num_io_reqs, sizeof(int), 0, &kern_addr, sizeof(struct sockaddr_nl));
-	if(ret < 0) {
-		perror("Unable to recv count from kernel module\n");
-		return -1;
-	}
-	
-	return num_io_reqs;
+	return 0;
 }
 
 int get_num_io_rqs(char *dev)
@@ -55,6 +41,7 @@ int get_num_io_rqs(char *dev)
 	int num_io_rqs = 0;
 	struct nlmsghdr *nlh;
 	struct km_request *rq;
+	int ret;
 	
 	nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(MAX_PAYLOAD));
 	memset(nlh, 0, NLMSG_SPACE(MAX_PAYLOAD));
@@ -66,13 +53,13 @@ int get_num_io_rqs(char *dev)
 	rq->code = 2;
 	rq->data.buf = dev;
 	
-	int ret = sendto(sockfd, (void*)nlh, nlh->nlmsg_len, 0, (struct sockaddr *)&kern_addr, sizeof(struct sockaddr_nl));
+	ret = sendto(sockfd, (void*)nlh, nlh->nlmsg_len, 0, (struct sockaddr *)&kern_addr, sizeof(struct sockaddr_nl));
 	if(ret < 0) {
 		perror("Unable to send message to kernel module\n");
 		return -1;
 	}
 	
-	int ret = recvfrom(sockfd, (void*)nlh, sizeof(int), 0, &kern_addr, sizeof(struct sockaddr_nl));
+	ret = recvfrom(sockfd, (void*)nlh, sizeof(int), 0, (struct sockaddr *)&kern_addr, sizeof(struct sockaddr_nl));
 	if(ret < 0) {
 		perror("Unable to recv count from kernel module\n");
 		return -1;

@@ -2,7 +2,7 @@
 #ifndef LINUX_IO_REQUEST_COUNTER_H
 #define LINUX_IO_REQUEST_COUNTER_H
 
-static struct km_request {
+struct km_request {
 	int code;
 	union {
 		void *buf;
