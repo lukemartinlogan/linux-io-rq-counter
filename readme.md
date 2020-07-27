@@ -13,12 +13,12 @@ C11 compiler
 
 # 3. Building
 
-cd /path/to/linux-io-rq-counter  
-mkdir build  
-cd build
-cmake ../
-make -j4  
-make install
+> cd /path/to/linux-io-rq-counter  
+> mkdir build  
+> cd build
+> cmake ../
+> make -j4  
+> make build-km  
 
 # 4. Usage
 
