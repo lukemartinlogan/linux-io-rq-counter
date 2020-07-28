@@ -209,8 +209,7 @@ static void get_num_io_requests(char *dev, int pid)
     //Get request queue for block device
     q = dd->bdev->bd_queue;
 
-    //Compute the number of IO requests for device
-    num_cpus = num_online_cpus();
+    //Compute the number of IO requests for device 
 	for(i = 0; i < q->nr_hw_queues; ++i) {
 		hctx = q->queue_hw_ctx[i];
 		total_rqs += hctx->queued;
