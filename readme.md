@@ -28,6 +28,7 @@ build-essential
 
 ## 4-1. Install the kerenel module
 
+The following command will integrate the kernel module into your Linux system:  
 > make insert-km  
 
 You can use the following to see if the module is successfully installed:  
@@ -41,10 +42,14 @@ You can use the following to clean the kernel log to make it more readable:
 
 ## 4-2. Associate storage devices with the kernel module
 
+The following command will associate a block device with the kernel module:  
+
 > ./mount-counter /dev/...  
 
-NOTE: You should use the device file and not partitions. For
-example, use /dev/sda instead of /dev/sda1.  
+NOTE: You should use the block device file and not partitions. For
+example, use /dev/sda instead of /dev/sda1. Partitions all end up
+going to the same place anyway, so it would be redundant. However,
+it will not result in error.  
 
 ## 4-3. Link with the user library
 
@@ -63,8 +68,6 @@ application and the kernel module. Assuming you did step 4-2 successfully,
 the kernel module will be associated with a bunch of devices. You will
 call get_num_io_rqs() with one of the devices you mounted a counter to.
 For example, "/dev/sda".
-
-This is helpful to see if the kernel module goes wrong.
 
 ## 4-4. Remove the kernel module
 
