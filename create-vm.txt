@@ -64,3 +64,10 @@ sudo virsh console test-kmods
 sudo virsh destroy test-kmods
 sudo virsh undefine test-kmods --remove-all-storage 
 
+#NOTES
+
+make build-km
+make insert-km
+./mount-counter /dev/sdc
+watch ./test-counter /dev/sdc
+make remove-km

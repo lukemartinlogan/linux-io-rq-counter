@@ -195,7 +195,7 @@ static void get_num_io_requests(char *dev, int pid)
     struct request_queue *q;
 	struct blk_mq_hw_ctx *hctx;
 	struct dev_data *dd;
-	int total_rqs = 0;
+	int total_rqs = 0, temp;
 	int i = 0;
 	
 	//Find block device
@@ -212,12 +212,11 @@ static void get_num_io_requests(char *dev, int pid)
     //Compute the number of IO requests for device 
 	for(i = 0; i < q->nr_hw_queues; ++i) {
 		hctx = q->queue_hw_ctx[i];
-		total_rqs += hctx->run;
-		//total_rqs += hctx->queued + hctx->run;
+		total_rqs += hctx->queued + hctx->run;
 	}
+	temp = total_rqs;
 	total_rqs -= dd->last_total_rqs;
-	dd->last_total_rqs = total_rqs;
-	printk("linux_io_rq_counter_km: NUM RQS (%p): %d\n", dd, total_rqs);
+	dd->last_total_rqs = temp;
 	
 	//Send back to user
 	send_msg_to_usr(0, total_rqs, pid);
