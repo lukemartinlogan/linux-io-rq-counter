@@ -28,7 +28,7 @@ static inline struct nlmsghdr *send_msg_to_kernel(int code, char *dev)
 	nlh->nlmsg_flags = 0;
 	rq = NLMSG_DATA(nlh);
 	
-	rq->code = 2;
+	rq->code = code;
 	strcpy(rq->data.buf, dev);
 	
 	ret = sendto(sockfd, (void*)nlh, NLMSG_SPACE(sizeof(struct km_request)), 0, (struct sockaddr *)&kern_addr, addrlen);
