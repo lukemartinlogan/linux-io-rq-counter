@@ -212,12 +212,12 @@ static void get_num_io_requests(char *dev, int pid)
     //Compute the number of IO requests for device 
 	for(i = 0; i < q->nr_hw_queues; ++i) {
 		hctx = q->queue_hw_ctx[i];
-		total_rqs += hctx->queued;
+		total_rqs += hctx->run;
 		//total_rqs += hctx->queued + hctx->run;
 	}
 	total_rqs -= dd->last_total_rqs;
 	dd->last_total_rqs = total_rqs;
-	printk("linux_io_rq_counter_km: NUM RQS: %d\n", total_rqs);
+	printk("linux_io_rq_counter_km: NUM RQS (%p): %d\n", dd, total_rqs);
 	
 	//Send back to user
 	send_msg_to_usr(0, total_rqs, pid);
