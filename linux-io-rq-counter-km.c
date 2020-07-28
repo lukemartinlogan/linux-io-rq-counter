@@ -11,6 +11,7 @@
 #include <linux/netlink.h>
 #include <linux/connector.h>
 #include <linux/list.h>
+#include <linux/cpumask.h>
 
 MODULE_AUTHOR("Luke Logan <llogan@hawk.iit.edu>");
 MODULE_DESCRIPTION("A simple test to acquire the current number of queued and issued requeusts for a particular device");
@@ -209,9 +210,11 @@ static void get_num_io_requests(char *dev, int pid)
     q = dd->bdev->bd_queue;
 
     //Compute the number of IO requests for device
+    num_cpus = num_online_cpus();
 	for(i = 0; i < q->nr_hw_queues; ++i) {
 		hctx = q->queue_hw_ctx[i];
-		total_rqs += hctx->queued + hctx->run;
+		total_rqs += hctx->queued;
+		//total_rqs += hctx->queued + hctx->run;
 	}
 	total_rqs -= dd->last_total_rqs;
 	dd->last_total_rqs = total_rqs;
