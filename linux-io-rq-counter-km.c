@@ -194,8 +194,7 @@ static void get_num_io_requests(char *dev, int pid)
 	struct blk_mq_hw_ctx *hctx;
 	struct dev_data *dd;
 	int total_rqs = 0;
-	struct list_head *pos, *head;
-	int i = 0;
+	int i = 0, j = 0;
 	
 	//Find block device
 	dd = find_block_device(dev);
@@ -209,16 +208,15 @@ static void get_num_io_requests(char *dev, int pid)
     q = dd->bdev->bd_queue;
 
     //Compute the number of IO requests for device
-    total_rqs += q->nr_pending;
-	/*for(i = 0; i < q->nr_hw_queues; ++i) {
+    //total_rqs += q->nr_pending;
+	for(i = 0; i < q->nr_hw_queues; ++i) {
 		hctx = q->queue_hw_ctx[i];
-		head = &hctx->hctx_list;
-		list_for_each(pos, head) {
-			++total_rqs;
+		for(j = 0; j < BLK_MQ_MAX_DISPATCH_ORDER; j++) {
+			total_rqs += hctx->dispatched[i];
 		}
 		//total_rqs += hctx->nr_active.counter;
 		//total_rqs += hctx->queued + hctx->run;
-	}*/
+	}
 	
 	//Send back to user
 	send_msg_to_usr(0, total_rqs, pid);
