@@ -17,6 +17,7 @@ MODULE_LICENSE("GPL");
 MODULE_ALIAS_FS("linux-io-rq-counter-km");
 
 //Macros
+#define KERNEL_VERSION_4
 #define NETLINK_USER 31
 #define MAX_PAYLOAD 32
 #define MAX_MOUNTED_BDEVS 32
@@ -157,7 +158,11 @@ static void mount_device(char *dev, int pid)
 	struct dev_data *dd = alloc_block_device(dev);
 
     //Acquire block device structure
+    #if defined(KERNEL_VERSION_5)
     dd->bdev = lookup_bdev(dev);
+    #elif defined(KERNEL_VERSION_4)
+    dd->bdev = lookup_bdev(dev, 0);
+    #endif
     if (IS_ERR(dd->bdev)) {
         printk(KERN_INFO "linux_io_rq_counter_km: can't open bdev <%lu>\n", PTR_ERR(dd->bdev));
         send_msg_to_usr(-1, 0, pid);

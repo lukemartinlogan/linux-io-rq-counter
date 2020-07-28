@@ -1,7 +1,7 @@
 
 ########Get Quemu and KVM
 sudo apt update && sudo apt upgrade
-sudo apt install qemu-kvm libvirt-bin virtinst cloud-utils
+sudo apt install qemu-kvm libvirt-bin virtinst cloud-utils ebtables dnsmasq
 sudo reboot
 
 ########Download ubuntu
@@ -21,7 +21,7 @@ sudo qemu-img resize /var/lib/libvirt/images/test-kmods.img 20G
 nano test-kmods.txt
 ------------------------------------
 #cloud-config
-password: a
+password: asdf
 chpasswd: { expire: False }
 ssh_pwauth: True
 hostname: test-kmods
@@ -32,24 +32,30 @@ sudo cloud-localds /var/lib/libvirt/images/test-kmods.iso test-kmods.txt
 
 ########Deploy each cloud image as a VM
 ##Use "ctl-shift-]" (without quotes) to exit console
-#Use 'ubuntu' as username and 'a' as password (without quotes)
+#Use 'ubuntu' as username and 'asdf' as password (without quotes)
 
-sudo virt-install --name test-kmods --ram 16000 --vcpus 4 --disk \
+sudo virsh net-autostart default
+sudo virsh net-start default
+virsh net-list --all
+
+sudo virt-install --name test-kmods --ram 1000 --vcpus 4 --disk \
 /var/lib/libvirt/images/test-kmods.img,device=disk,bus=virtio --disk \
 /var/lib/libvirt/images/test-kmods.iso,device=cdrom --os-type linux \
 --os-variant ubuntu18.04 --virt-type kvm --graphics none \
 --network network=default,model=virtio --import
 
-sudo dhclient ens2
-ip addr show
-
-########SET IPS
-
-IP=192.168.122.140
-
-########Setup NFS server on NameNodes and DataNodes
-
-ssh ubuntu@${IP}
+######## Log into server
 sudo apt update && sudo apt upgrade
 sudo apt-get install cmake sysstat build-essential libz-dev git  
+git clone https://github.com/lukemartinlogan/linux-io-rq-counter.git
+git config --global credential.helper cache
+git pull
+
+####### Start VM
+sudo virsh start test-kmods
+sudo virsh console test-kmods
+
+####### Remove VM
+sudo virsh destroy test-kmods
+sudo virsh undefine test-kmods --remove-all-storage 
 
