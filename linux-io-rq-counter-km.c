@@ -156,26 +156,11 @@ static void mount_device(char *dev, int pid)
 {
 	//Acquire a free block device structure
 	struct dev_data *dd = alloc_block_device(dev);
-
+	
     //Acquire block device structure
-    #if defined(KERNEL_VERSION_5)
-    dd->bdev = lookup_bdev(dev);
-    #elif defined(KERNEL_VERSION_4)
-    dd->bdev = lookup_bdev(dev, 0);
-    #endif
+    dd->bdev = blkdev_get_by_path(dev, 0, dd);
     if (IS_ERR(dd->bdev)) {
         printk(KERN_INFO "linux_io_rq_counter_km: can't open bdev <%lu>\n", PTR_ERR(dd->bdev));
-        send_msg_to_usr(-1, 0, pid);
-        return;
-    }
-    if (!bdget(dd->bdev->bd_dev)) {
-        printk(KERN_INFO "linux_io_rq_counter_km: error bdget()\n");
-        send_msg_to_usr(-1, 0, pid);
-        return;
-    }
-    if (blkdev_get(dd->bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL, dd)) {
-        printk(KERN_INFO "linux_io_rq_counter_km: error blkdev_get()\n");
-        bdput(dd->bdev);
         send_msg_to_usr(-1, 0, pid);
         return;
     }
@@ -221,14 +206,6 @@ static void __exit exit_io_request_counter(void)
 	struct dev_data *dd;
 	int i = 0;
 	
-	//Release all devices
-    for(i = 0; i < MAX_MOUNTED_BDEVS; i++) {
-		dd = device_list + i;
-        blkdev_put(dd->bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL);
-        bdput(dd->bdev);
-    }
-    
-    //Release netlink socket
     netlink_kernel_release(nl_sk);
     
     printk(KERN_INFO "linux_io_rq_counter_km: Module has been removed!\n");
