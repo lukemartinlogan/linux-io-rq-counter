@@ -18,32 +18,34 @@ MODULE_LICENSE("GPL");
 MODULE_ALIAS_FS("linux_io_requeust_counter");
 
 //Macros
+#define NETLINK_USER 31
+#define MAX_PAYLOAD 1024
 #define MAX_MOUNTED_BDEVS 32
 
 //Data definitions
-static struct dev_data {
+struct dev_data {
 	int is_active;
 	char *name;
 	struct block_device *bdev;
 };
-static struct km_request {
+struct km_request {
 	int code;
 	union {
-		void *buf;
+		char buf[MAX_PAYLOAD];
 		int val;
 	} data;
 };
 static int queue_tail = 0;
-static dev_data device_list[MAX_MOUNTED_BDEVS];
+static struct dev_data device_list[MAX_MOUNTED_BDEVS];
 struct sock *nl_sk = NULL;
 
 //Prototypes
 static int __init init_io_request_counter(void);
-static void start_server(void);
+static int start_server(void);
 static void server_loop(struct sk_buff *skb);
 static struct dev_data *alloc_block_device(char *dev);
 static struct dev_data *find_block_device(char *dev);
-static void mount_device(char *dev);
+static void mount_device(char *dev, int pid);
 static void get_num_io_requests(char *dev, int pid);
 static void __exit exit_io_request_counter(void);
 
@@ -51,11 +53,10 @@ static void __exit exit_io_request_counter(void);
 static int __init init_io_request_counter(void)
 {
 	printk(KERN_INFO "linux-io-request_counter: Initializing linux driver io test");
-	start_server();
-    return 0;
+	return start_server();
 }
 
-static void start_server(void)
+static int start_server(void)
 {
 	struct netlink_kernel_cfg cfg = {
 		.input = server_loop,
@@ -67,6 +68,7 @@ static void start_server(void)
 		printk(KERN_ALERT "linux-io-request_counter: Error creating socket.\n");
 		return -10;
 	}
+	return 0;
 }
 
 static void server_loop(struct sk_buff *skb)
@@ -81,9 +83,9 @@ static void server_loop(struct sk_buff *skb)
 	rq = (struct km_request*)nlmsg_data(nlh);
 	pid = nlh->nlmsg_pid; /*pid of sending process */
 	
-	switch(msg->code) {
+	switch(rq->code) {
 		case 1: {
-			mount_device(rq->data.buf);
+			mount_device(rq->data.buf, pid);
 			break;
 		}
 		
@@ -103,7 +105,7 @@ static struct dev_data *alloc_block_device(char *dev)
 		dd = device_list + (queue_tail + i)%32;
 		if(!dd->is_active) {
 			dd->is_active = 1;
-			dev->name = dev;
+			dd->name = dev;
 			return dd;
 		}
 	}
@@ -124,7 +126,30 @@ static struct dev_data *find_block_device(char *dev)
 	return NULL;
 }
 
-static void mount_device(char *dev)
+static void send_msg_to_usr(int code, int val, int pid)
+{
+	struct nlmsghdr *nlh;
+	struct sk_buff *skb_out;
+	int res = 0;
+	struct km_request *rq;
+	
+	skb_out = nlmsg_new(sizeof(struct km_request), 0);
+	if(!skb_out) {
+		printk(KERN_ERR "linux-io-request_counter: Failed to allocate new skb\n");
+		return;
+	} 
+	nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, sizeof(struct km_request), 0);
+	NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
+	rq = nlmsg_data(nlh);
+	rq->code = code;
+	rq->data.val = val;
+	res=nlmsg_unicast(nl_sk, skb_out, pid);
+	if(res<0) {
+		printk(KERN_ERR "linux-io-request_counter: Error while sending back to user\n");
+	}
+}
+
+static void mount_device(char *dev, int pid)
 {
 	//Acquire a free block device structure
 	struct dev_data *dd = alloc_block_device(dev);
@@ -133,19 +158,25 @@ static void mount_device(char *dev)
     dd->bdev = lookup_bdev(dev);
     if (IS_ERR(dd->bdev)) {
         printk(KERN_INFO "linux-io-request_counter: can't open bdev <%lu>\n", PTR_ERR(dd->bdev));
+        send_msg_to_usr(-1, 0, pid);
         return;
     }
     if (!bdget(dd->bdev->bd_dev)) {
         printk(KERN_INFO "linux-io-request_counter: error bdget()\n");
+        send_msg_to_usr(-1, 0, pid);
         return;
     }
     if (blkdev_get(dd->bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL, dd)) {
         printk(KERN_INFO "linux-io-request_counter: error blkdev_get()\n");
         bdput(dd->bdev);
+        send_msg_to_usr(-1, 0, pid);
         return;
     }
     dd->is_active = 1;
     printk(KERN_INFO "%s is mounted!\n", dev);
+    
+    //Send return code back to user
+    send_msg_to_usr(0, 0, pid);
     return;
 }
 
@@ -154,15 +185,14 @@ static void get_num_io_requests(char *dev, int pid)
     struct request_queue *q;
 	struct blk_mq_hw_ctx *hctx;
 	struct dev_data *dd;
-	struct sk_buff *skb_out;
-	int i = 0, res = 0;
-	int msg_size = sizeof(int);
-	struct km_request *rq;
+	int total_rqs = 0;
+	int i = 0;
 	
 	//Find block device
 	dd = find_block_device(dev);
 	if(dd == NULL) {
 		printk(KERN_INFO "linux-io-request_counter: Could not find block device %s\n", dev);
+		send_msg_to_usr(-1, 0, pid);
 		return;
 	}
 	
@@ -170,33 +200,21 @@ static void get_num_io_requests(char *dev, int pid)
     q = dd->bdev->bd_queue;
 
     //Compute the number of IO requests for device
-	int total_rqs = 0;
 	for(i = 0; i < q->nr_hw_queues; ++i) {
 		hctx = q->queue_hw_ctx[i];
 		total_rqs += hctx->queued + hctx->run;
 	}
 	
 	//Send back to user
-	skb_out = nlmsg_new(msg_size, 0);
-	if(!skb_out) {
-		printk(KERN_ERR "linux-io-request_counter: Failed to allocate new skb\n");
-		return;
-	} 
-	nlh=nlmsg_put(skb_out, 0, 0, NLMSG_DONE, msg_size, 0);
-	NETLINK_CB(skb_out).dst_group = 0; /* not in mcast group */
-	rq = nlmsg_data(nlh);
-	rq->data.val = total_rqs;
-	res=nlmsg_unicast(nl_sk, skb_out, pid);
-	if(res<0) {
-		printk(KERN_ERR "linux-io-request_counter: Error while sending back to user\n");
-	}
+	send_msg_to_usr(0, total_rqs, pid);
 }
 
 static void __exit exit_io_request_counter(void)
 {
 	struct dev_data *dd;
+	int i = 0;
 	
-    for(int i = 0; i < MAX_MOUNTED_BDEVS; i++) {
+    for(i = 0; i < MAX_MOUNTED_BDEVS; i++) {
 		dd = device_list + i;
         blkdev_put(dd->bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL);
         bdput(dd->bdev);

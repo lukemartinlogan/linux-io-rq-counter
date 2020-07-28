@@ -24,7 +24,7 @@ C11 compiler
 
 ## 4-1. Install the kerenel module
 
-sudo insmod ./linux-io-rq-counter-km.ko
+> sudo insmod ./linux-io-rq-counter-km.ko
 
 ## 4-2. Associate storage devices with the kernel module
 

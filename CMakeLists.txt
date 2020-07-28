@@ -12,4 +12,4 @@ add_executable(mount-counter ${CMAKE_SOURCE_DIR}/mount-counter.c)
 add_dependencies(mount-counter linux-io-rq-counter-um)
 target_link_libraries(mount-counter linux-io-rq-counter-um)
 
-add_custom_target(build-km COMMAND bash build-km.sh ${CMAKE_SOURCE_DIR})
+add_custom_target(build-km COMMAND bash ${CMAKE_SOURCE_DIR}/build-km.sh ${CMAKE_SOURCE_DIR})
