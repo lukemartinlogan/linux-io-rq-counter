@@ -209,7 +209,7 @@ static void get_num_io_requests(char *dev, int pid)
     //Compute the number of IO requests for device
 	for(i = 0; i < q->nr_hw_queues; ++i) {
 		hctx = q->queue_hw_ctx[i];
-		total_rqs += hctx->queued; //hctx-run
+		total_rqs += hctx->queued - hctx->run;
 	}
 	
 	//Send back to user
