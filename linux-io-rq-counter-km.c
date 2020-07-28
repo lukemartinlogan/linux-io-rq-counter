@@ -1,4 +1,3 @@
-//Deepika (dpadmanabhan@hawk.iit.edu)
 
 #include <linux/init.h>
 #include <linux/module.h>
@@ -15,17 +14,17 @@
 MODULE_AUTHOR("Luke Logan <llogan@hawk.iit.edu>");
 MODULE_DESCRIPTION("A simple test to acquire the current number of queued and issued requeusts for a particular device");
 MODULE_LICENSE("GPL");
-MODULE_ALIAS_FS("linux_io_requeust_counter");
+MODULE_ALIAS_FS("linux-io-rq-counter-km");
 
 //Macros
 #define NETLINK_USER 31
-#define MAX_PAYLOAD 1024
+#define MAX_PAYLOAD 32
 #define MAX_MOUNTED_BDEVS 32
 
 //Data definitions
 struct dev_data {
 	int is_active;
-	char *name;
+	char name[MAX_PAYLOAD];
 	struct block_device *bdev;
 };
 struct km_request {
@@ -52,7 +51,7 @@ static void __exit exit_io_request_counter(void);
 //Implementation
 static int __init init_io_request_counter(void)
 {
-	printk(KERN_INFO "linux-io-request_counter: Initializing linux driver io test");
+	printk(KERN_INFO "linux_io_rq_counter_km: Initializing module");
 	return start_server();
 }
 
@@ -65,9 +64,10 @@ static int start_server(void)
 	nl_sk = netlink_kernel_create(&init_net, NETLINK_USER, &cfg);
 	if(!nl_sk)
 	{
-		printk(KERN_ALERT "linux-io-request_counter: Error creating socket.\n");
+		printk(KERN_ALERT "linux_io_rq_counter_km: Error creating socket.\n");
 		return -10;
 	}
+	printk(KERN_INFO "linux_io_rq_counter_km: Netlink socket initialized");
 	return 0;
 }
 
@@ -77,11 +77,12 @@ static void server_loop(struct sk_buff *skb)
 	struct km_request *rq;
 	int pid;
 
-	printk(KERN_INFO "linux-io-request_counter: Entering: %s\n", __FUNCTION__);
+	printk(KERN_INFO "linux_io_rq_counter_km: Entering: %s\n", __FUNCTION__);
 	
 	nlh=(struct nlmsghdr*)skb->data;
 	rq = (struct km_request*)nlmsg_data(nlh);
 	pid = nlh->nlmsg_pid; /*pid of sending process */
+	printk(KERN_INFO "linux_io_rq_counter_km: Code %d", rq->code);
 	
 	switch(rq->code) {
 		case 1: {
@@ -105,7 +106,8 @@ static struct dev_data *alloc_block_device(char *dev)
 		dd = device_list + (queue_tail + i)%32;
 		if(!dd->is_active) {
 			dd->is_active = 1;
-			dd->name = dev;
+			strcpy(dd->name, dev);
+			queue_tail = (queue_tail + 1)%32;
 			return dd;
 		}
 	}
@@ -135,7 +137,7 @@ static void send_msg_to_usr(int code, int val, int pid)
 	
 	skb_out = nlmsg_new(sizeof(struct km_request), 0);
 	if(!skb_out) {
-		printk(KERN_ERR "linux-io-request_counter: Failed to allocate new skb\n");
+		printk(KERN_ERR "linux_io_rq_counter_km: Failed to allocate new skb\n");
 		return;
 	} 
 	nlh = nlmsg_put(skb_out, 0, 0, NLMSG_DONE, sizeof(struct km_request), 0);
@@ -145,7 +147,7 @@ static void send_msg_to_usr(int code, int val, int pid)
 	rq->data.val = val;
 	res=nlmsg_unicast(nl_sk, skb_out, pid);
 	if(res<0) {
-		printk(KERN_ERR "linux-io-request_counter: Error while sending back to user\n");
+		printk(KERN_ERR "linux_io_rq_counter_km: Error while sending back to user\n");
 	}
 }
 
@@ -157,23 +159,23 @@ static void mount_device(char *dev, int pid)
     //Acquire block device structure
     dd->bdev = lookup_bdev(dev);
     if (IS_ERR(dd->bdev)) {
-        printk(KERN_INFO "linux-io-request_counter: can't open bdev <%lu>\n", PTR_ERR(dd->bdev));
+        printk(KERN_INFO "linux_io_rq_counter_km: can't open bdev <%lu>\n", PTR_ERR(dd->bdev));
         send_msg_to_usr(-1, 0, pid);
         return;
     }
     if (!bdget(dd->bdev->bd_dev)) {
-        printk(KERN_INFO "linux-io-request_counter: error bdget()\n");
+        printk(KERN_INFO "linux_io_rq_counter_km: error bdget()\n");
         send_msg_to_usr(-1, 0, pid);
         return;
     }
     if (blkdev_get(dd->bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL, dd)) {
-        printk(KERN_INFO "linux-io-request_counter: error blkdev_get()\n");
+        printk(KERN_INFO "linux_io_rq_counter_km: error blkdev_get()\n");
         bdput(dd->bdev);
         send_msg_to_usr(-1, 0, pid);
         return;
     }
     dd->is_active = 1;
-    printk(KERN_INFO "%s is mounted!\n", dev);
+    printk(KERN_INFO "linux_io_rq_counter_km: %s is mounted!\n", dev);
     
     //Send return code back to user
     send_msg_to_usr(0, 0, pid);
@@ -191,7 +193,7 @@ static void get_num_io_requests(char *dev, int pid)
 	//Find block device
 	dd = find_block_device(dev);
 	if(dd == NULL) {
-		printk(KERN_INFO "linux-io-request_counter: Could not find block device %s\n", dev);
+		printk(KERN_INFO "linux_io_rq_counter_km: Could not find block device %s\n", dev);
 		send_msg_to_usr(-1, 0, pid);
 		return;
 	}
@@ -220,7 +222,7 @@ static void __exit exit_io_request_counter(void)
         bdput(dd->bdev);
     }
     
-    printk(KERN_INFO "linux-io-request_counter: Module has been removed!\n");
+    printk(KERN_INFO "linux_io_rq_counter_km: Module has been removed!\n");
 }
 
 module_init(init_io_request_counter)

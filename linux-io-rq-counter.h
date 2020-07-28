@@ -1,9 +1,9 @@
 
-#ifndef LINUX_IO_REQUEST_COUNTER_H
-#define LINUX_IO_REQUEST_COUNTER_H
+#ifndef LINUX_IO_RQ_COUNTER_H
+#define LINUX_IO_RQ_COUNTER_H
 
 #define NETLINK_USER 31
-#define MAX_PAYLOAD 1024
+#define MAX_PAYLOAD 32
 
 struct km_request {
 	int code;

@@ -1,0 +1,55 @@
+
+########Get Quemu and KVM
+sudo apt update && sudo apt upgrade
+sudo apt install qemu-kvm libvirt-bin virtinst cloud-utils
+sudo reboot
+
+########Download ubuntu
+wget https://cloud-images.ubuntu.com/bionic/current/bionic-server-cloudimg-amd64.img
+
+########Check cloud image and resize (set to be the size of the VM)
+sudo mkdir -p /var/lib/libvirt/images
+sudo qemu-img resize bionic-server-cloudimg-amd64.img 20G
+sudo qemu-img info bionic-server-cloudimg-amd64.img
+
+########Convert cloud image to qcow2
+sudo mkdir -p /var/lib/libvirt/images
+sudo qemu-img convert -f qcow2 bionic-server-cloudimg-amd64.img /var/lib/libvirt/images/test-kmods.img
+sudo qemu-img resize /var/lib/libvirt/images/test-kmods.img 20G
+
+########Create cloud config for each VM
+nano test-kmods.txt
+------------------------------------
+#cloud-config
+password: a
+chpasswd: { expire: False }
+ssh_pwauth: True
+hostname: test-kmods
+-------------------------------------
+
+########Generate config iso for each VM
+sudo cloud-localds /var/lib/libvirt/images/test-kmods.iso test-kmods.txt
+
+########Deploy each cloud image as a VM
+##Use "ctl-shift-]" (without quotes) to exit console
+#Use 'ubuntu' as username and 'a' as password (without quotes)
+
+sudo virt-install --name test-kmods --ram 16000 --vcpus 4 --disk \
+/var/lib/libvirt/images/test-kmods.img,device=disk,bus=virtio --disk \
+/var/lib/libvirt/images/test-kmods.iso,device=cdrom --os-type linux \
+--os-variant ubuntu18.04 --virt-type kvm --graphics none \
+--network network=default,model=virtio --import
+
+sudo dhclient ens2
+ip addr show
+
+########SET IPS
+
+IP=192.168.122.140
+
+########Setup NFS server on NameNodes and DataNodes
+
+ssh ubuntu@${IP}
+sudo apt update && sudo apt upgrade
+sudo apt-get install cmake sysstat build-essential libz-dev git  
+

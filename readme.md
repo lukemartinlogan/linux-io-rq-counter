@@ -24,7 +24,13 @@ C11 compiler
 
 ## 4-1. Install the kerenel module
 
-> sudo insmod ./linux-io-rq-counter-km.ko
+> make insert-km  
+
+You can use the following to see if the module is successfully installed:  
+> lsmod | grep linux_io_rq_counter_km  
+
+If it was not listed, you can use the following to view the kernel log:  
+> dmesg | grep linux_io_rq_counter_km  
 
 ## 4-2. Associate storage devices with the kernel module
 
@@ -37,10 +43,10 @@ example, use /dev/sda instead of /dev/sda1.
 
 Building this application will create a file called:
 
-> linux-io-rq-counter-um.so  
+> liblinux-io-rq-counter-um.so
 
 You can link with this file to interact with the kernel module from
-your application. The user API is as follows:
+your application. The library API is as follows:
 
 > void init_counter_syscalls(void);  
 > int get_num_io_rqs(char *dev);  
@@ -51,18 +57,11 @@ the kernel module will be associated with a bunch of devices. You will
 call get_num_io_rqs() with one of the devices you mounted a counter to.
 For example, "/dev/sda".
 
-## 4-4. Viewing the kernel module log
-
-You can use this command to view the kernel log to see the output from
-this module:  
-
-> dmesg | grep linux-io-request_counter  
-
 This is helpful to see if the kernel module goes wrong.
 
-## 4-5. Remove the kernel module
+## 4-4. Remove the kernel module
 
-> rmmod linux_io_rq_counter  
+> make remove-km  
 
 
 

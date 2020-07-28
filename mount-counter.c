@@ -14,6 +14,7 @@ int main(int argc, char **argv)
 	}
 	char *dev = argv[1];
 	
+	printf("Mounting %s\n", dev);
 	init_counter_syscalls();
 	mount_counter(dev);
 }

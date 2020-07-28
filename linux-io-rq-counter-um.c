@@ -8,9 +8,6 @@
 #include <linux/netlink.h>
 #include <linux-io-rq-counter.h>
 
-#define NETLINK_USER 31
-#define MAX_PAYLOAD 1024
-
 //Global vars
 static int sockfd;
 static struct sockaddr_nl my_addr = {0};
