@@ -31,8 +31,6 @@ hostname: test-kmods
 sudo cloud-localds /var/lib/libvirt/images/test-kmods.iso test-kmods.txt
 
 ########Deploy each cloud image as a VM
-##Use "ctl-shift-]" (without quotes) to exit console
-#Use 'ubuntu' as username and 'asdf' as password (without quotes)
 
 sudo virsh net-autostart default
 sudo virsh net-start default
@@ -44,15 +42,22 @@ sudo virt-install --name test-kmods --ram 1000 --vcpus 4 --disk \
 --os-variant ubuntu18.04 --virt-type kvm --graphics none \
 --network network=default,model=virtio --import
 
-######## Log into server
+#Username: ubuntu
+#Password: asdf
+##Use "ctl-shift-]" (without quotes) to exit console
+
+######## Install apps
 sudo apt update && sudo apt upgrade
 sudo apt-get install cmake sysstat build-essential libz-dev git  
 git clone https://github.com/lukemartinlogan/linux-io-rq-counter.git
+cd linux-io-rq-counter/build
 git config --global credential.helper cache
 git pull
 
-####### Start VM
+####### Manage VM
 sudo virsh start test-kmods
+sudo virsh shutdown test-kmods
+sudo virsh destroy test-kmods
 sudo virsh console test-kmods
 
 ####### Remove VM

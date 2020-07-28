@@ -36,7 +36,7 @@ struct km_request {
 	} data;
 };
 static int queue_tail = 0;
-static struct dev_data device_list[MAX_MOUNTED_BDEVS];
+static struct dev_data device_list[MAX_MOUNTED_BDEVS] = {0};
 struct sock *nl_sk = NULL;
 
 //Prototypes
@@ -221,11 +221,15 @@ static void __exit exit_io_request_counter(void)
 	struct dev_data *dd;
 	int i = 0;
 	
+	//Release all devices
     for(i = 0; i < MAX_MOUNTED_BDEVS; i++) {
 		dd = device_list + i;
         blkdev_put(dd->bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL);
         bdput(dd->bdev);
     }
+    
+    //Release netlink socket
+    netlink_kernel_release(nl_sk);
     
     printk(KERN_INFO "linux_io_rq_counter_km: Module has been removed!\n");
 }
