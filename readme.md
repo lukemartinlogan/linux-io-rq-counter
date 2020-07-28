@@ -1,15 +1,19 @@
 
-# 1. LabStor
+# 1. Linux IO Request Counter
 
 This is a system for returning the number of pending and issued I/O
 requests from a particular disk device. It requires that you load a
-kernel module and link your application with a user library.
+kernel module and link your application with a user library that
+will interact with this module. It assumes the devices you are using
+Linux's MQ Scheduler. In recent Linux systems, this will probably be
+the case.
 
 # 2. Dependencies
 
 Linux 3.6+  
 cmake 3.10 or higher  
 C11 compiler  
+build-essential  
 
 # 3. Building
 
@@ -27,14 +31,17 @@ C11 compiler
 > make insert-km  
 
 You can use the following to see if the module is successfully installed:  
-> lsmod | grep linux_io_rq_counter_km  
+> make check-km  
 
 If it was not listed, you can use the following to view the kernel log:  
-> dmesg | grep linux_io_rq_counter_km  
+> make check-klog  
+
+You can use the following to clean the kernel log to make it more readable:
+> make clean-klog  
 
 ## 4-2. Associate storage devices with the kernel module
 
-> sudo ./mount-counter /dev/...  
+> ./mount-counter /dev/...  
 
 NOTE: You should use the device file and not partitions. For
 example, use /dev/sda instead of /dev/sda1.  
@@ -63,5 +70,12 @@ This is helpful to see if the kernel module goes wrong.
 
 > make remove-km  
 
+# 5. Test
 
+You can run the following code to test the counter:  
+> ./test-counter /dev/...  
+
+The first result will likely be a very large number. The counters store
+the number of I/O requests since the start of the computer. After the
+first iteration, the counter will be more accurate.
 
