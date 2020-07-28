@@ -217,6 +217,7 @@ static void get_num_io_requests(char *dev, int pid)
 	}
 	total_rqs -= dd->last_total_rqs;
 	dd->last_total_rqs = total_rqs;
+	printk("linux_io_rq_counter_km: NUM RQS: %d\n", total_rqs);
 	
 	//Send back to user
 	send_msg_to_usr(0, total_rqs, pid);
