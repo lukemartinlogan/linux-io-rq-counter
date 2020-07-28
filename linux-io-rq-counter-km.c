@@ -14,7 +14,7 @@
 MODULE_AUTHOR("Luke Logan <llogan@hawk.iit.edu>");
 MODULE_DESCRIPTION("A simple test to acquire the current number of queued and issued requeusts for a particular device");
 MODULE_LICENSE("GPL");
-MODULE_ALIAS_FS("linux-io-rq-counter-km");
+MODULE_ALIAS_FS("linux_io_rq_counter_km");
 
 //Macros
 #define KERNEL_VERSION_4
