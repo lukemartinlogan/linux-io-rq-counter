@@ -1,9 +1,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <asm/types.h>
-#include <sys/socket.h>
-#include <linux/netlink.h>
 #include <linux-io-rq-counter.h>
 
 int main(int argc, char **argv)
@@ -13,8 +10,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	char *dev = argv[1];
+	int code = 0;
 	
 	printf("Mounting %s\n", dev);
 	init_counter_syscalls();
-	mount_counter(dev);
+	code = mount_counter(dev);
+	printf("CODE: %d\n", code);
 }

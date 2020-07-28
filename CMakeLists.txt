@@ -11,6 +11,9 @@ add_library(linux-io-rq-counter-um SHARED ${CMAKE_SOURCE_DIR}/linux-io-rq-counte
 add_executable(mount-counter ${CMAKE_SOURCE_DIR}/mount-counter.c)
 add_dependencies(mount-counter linux-io-rq-counter-um)
 target_link_libraries(mount-counter linux-io-rq-counter-um)
+add_executable(test-counter ${CMAKE_SOURCE_DIR}/test-counter.c)
+add_dependencies(test-counter linux-io-rq-counter-um)
+target_link_libraries(test-counter linux-io-rq-counter-um)
 
 add_custom_target(build-km COMMAND bash ${CMAKE_SOURCE_DIR}/build-km.sh 1 ${CMAKE_SOURCE_DIR})
 add_custom_target(check-km COMMAND lsmod | grep linux_io_rq_counter_km)

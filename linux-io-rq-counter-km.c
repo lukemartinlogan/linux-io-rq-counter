@@ -203,11 +203,7 @@ static void get_num_io_requests(char *dev, int pid)
 
 static void __exit exit_io_request_counter(void)
 {
-	struct dev_data *dd;
-	int i = 0;
-	
     netlink_kernel_release(nl_sk);
-    
     printk(KERN_INFO "linux_io_rq_counter_km: Module has been removed!\n");
 }
 
