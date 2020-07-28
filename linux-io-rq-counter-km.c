@@ -129,6 +129,21 @@ static struct dev_data *find_block_device(char *dev)
 	return NULL;
 }
 
+static struct dev_data *release_all_block_devices(void)
+{
+	struct dev_data *dd;
+	int i = 0;
+	
+	for(i = 0; i < MAX_MOUNTED_BDEVS; i++) {
+		dd = device_list + i;
+		if(dd->is_active) {
+			blkdev_put(dd->bdev, 0);
+		}
+	}
+	
+	return NULL;
+}
+
 static void send_msg_to_usr(int code, int val, int pid)
 {
 	struct nlmsghdr *nlh;
@@ -194,7 +209,7 @@ static void get_num_io_requests(char *dev, int pid)
     //Compute the number of IO requests for device
 	for(i = 0; i < q->nr_hw_queues; ++i) {
 		hctx = q->queue_hw_ctx[i];
-		total_rqs += hctx->queued + hctx->run;
+		total_rqs += hctx->queued; //hctx-run
 	}
 	
 	//Send back to user
@@ -203,6 +218,7 @@ static void get_num_io_requests(char *dev, int pid)
 
 static void __exit exit_io_request_counter(void)
 {
+	release_all_block_devices();
     netlink_kernel_release(nl_sk);
     printk(KERN_INFO "linux_io_rq_counter_km: Module has been removed!\n");
 }
