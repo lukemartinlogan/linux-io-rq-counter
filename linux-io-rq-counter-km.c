@@ -10,6 +10,7 @@
 #include <linux/blk-mq.h>
 #include <linux/netlink.h>
 #include <linux/connector.h>
+#include <linux/list.h>
 
 MODULE_AUTHOR("Luke Logan <llogan@hawk.iit.edu>");
 MODULE_DESCRIPTION("A simple test to acquire the current number of queued and issued requeusts for a particular device");
@@ -193,6 +194,7 @@ static void get_num_io_requests(char *dev, int pid)
 	struct blk_mq_hw_ctx *hctx;
 	struct dev_data *dd;
 	int total_rqs = 0;
+	struct list_head *pos, *head;
 	int i = 0;
 	
 	//Find block device
@@ -207,9 +209,15 @@ static void get_num_io_requests(char *dev, int pid)
     q = dd->bdev->bd_queue;
 
     //Compute the number of IO requests for device
+    //total_rqs += q->nr_pending;
 	for(i = 0; i < q->nr_hw_queues; ++i) {
 		hctx = q->queue_hw_ctx[i];
-		total_rqs += hctx->nr_active.counter;
+		head = &hctx->hctx_list;
+		list_for_each(pos, head) {
+			++total_rqs;
+		}
+		//total_rqs += hctx->nr_active.counter;
+		//total_rqs += hctx->queued + hctx->run;
 	}
 	
 	//Send back to user
